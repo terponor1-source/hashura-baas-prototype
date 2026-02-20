@@ -1,0 +1,41 @@
+version: "3.8"
+services:
+  app:
+    image: node:20-bullseye
+    volumes:
+      - ..:/workspaces/hashura-baas-prototype:cached
+    command: sleep infinity
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: appdb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  hasura:
+    image: hasura/graphql-engine:v2.40.0
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:postgres@postgres:5432/appdb
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_DEV_MODE: "true"
+      HASURA_GRAPHQL_ADMIN_SECRET: "devsecret"
+      # For Auth0 (replace with your domain + audience)
+      HASURA_GRAPHQL_JWT_SECRET: '{"type":"RS256","jwk_url":"https://YOUR_DOMAIN/.well-known/jwks.json","audience":"YOUR_API_AUDIENCE","issuer":"https://YOUR_DOMAIN/"}'
+
+volumes:
+  pgdata:

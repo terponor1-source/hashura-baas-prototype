@@ -1,0 +1,12 @@
+{
+  "name": "hashura-baas-prototype",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/hashura-baas-prototype",
+  "forwardPorts": [
+    8080,
+    5432,
+    5173
+  ],
+  "postCreateCommand": "npm --prefix frontend install"
+}
