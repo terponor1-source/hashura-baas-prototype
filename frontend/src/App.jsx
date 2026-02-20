@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { ApolloClient, InMemoryCache, ApolloProvider, HttpLink, gql, useQuery } from '@apollo/client'
 import { setContext } from '@apollo/client/link/context'
 import { useAuth0 } from '@auth0/auth0-react'
@@ -17,7 +17,17 @@ function QueryBlock() {
 }
 
 export default function App() {
-  const { loginWithRedirect, logout, isAuthenticated, isLoading, getAccessTokenSilently, user } = useAuth0()
+  const {
+    loginWithRedirect,
+    logout,
+    isAuthenticated,
+    isLoading,
+    getAccessTokenSilently,
+    getIdTokenClaims,
+    user
+  } = useAuth0()
+  const [claims, setClaims] = useState(null)
+  const [claimsError, setClaimsError] = useState(null)
 
   const client = useMemo(() => {
     const httpLink = new HttpLink({ uri: import.meta.env.VITE_HASURA_GRAPHQL_URL })
@@ -51,9 +61,27 @@ export default function App() {
         ) : isAuthenticated ? (
           <>
             <p>Logged in as {user?.email || user?.name}</p>
-            <button onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}>
-              Log out
-            </button>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}>
+                Log out
+              </button>
+              <button
+                onClick={async () => {
+                  setClaimsError(null)
+                  try {
+                    const c = await getIdTokenClaims()
+                    setClaims(c || null)
+                  } catch (e) {
+                    setClaims(null)
+                    setClaimsError(e?.message || String(e))
+                  }
+                }}
+              >
+                Show token claims
+              </button>
+            </div>
+            {claimsError && <pre style={{ color: 'crimson' }}>{claimsError}</pre>}
+            {claims && <pre>{JSON.stringify(claims, null, 2)}</pre>}
             <h3>GraphQL test</h3>
             <QueryBlock />
           </>

@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: hashura_baas_postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+
+  hasura:
+    image: hasura/graphql-engine:v2.39.0
+    container_name: hashura_baas_hasura
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:postgres@postgres:5432/postgres
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_ADMIN_SECRET: "adminsecret"
+      HASURA_GRAPHQL_DEV_MODE: "true"
+      HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
+      # Replace with your Auth0 tenant values
+      HASURA_GRAPHQL_JWT_SECRET: '{"type":"RS256","jwk_url":"https://dev-4ch3kia7m6hujgd4.eu.auth0.com/.well-known/jwks.json","issuer":"https://dev-4ch3kia7m6hujgd4.eu.auth0.com/"}'
+
+volumes:
+  postgres_data:

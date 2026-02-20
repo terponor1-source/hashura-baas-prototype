@@ -1,69 +1,58 @@
-# Hashura + Auth0 + React (Codespaces)
+# Hashura BaaS Prototype
 
-Acest repo pornește un prototip complet în **GitHub Codespaces**: Postgres + Hashura + React (Vite) cu Auth0.
+Pornire rapidă pentru un setup local Hasura + Postgres, cu config pregătit pentru Auth0/JWT.
 
-## 1) Pornește Codespace
-- Creează un repo din acest folder.
-- În GitHub: **Code → Create codespace**.
-- Devcontainer-ul pornește automat serviciile (Postgres + Hashura).
+## Cerințe
+- Docker Engine
+- Docker Compose v2 (sau binarul v2)
+- Git
 
-Porturi expuse:
-- Hashura: http://localhost:8080
-- React: http://localhost:5173
+## 1) Clonează & pornește
+```bash
+git clone <your-repo-url>
+cd hashura-baas-prototype
 
-## 2) Configurează Auth0
-În Auth0:
-1. Creează un **API** (Set `Identifier` → audience).
-2. Creează o **SPA Application**.
-3. Configurează Allowed Callback/Logout/Origin pentru `http://localhost:5173`.
-4. Adaugă rules/actions să injecteze claims Hasura.
+docker compose up -d
+# Dacă folosești binarul v2 separat:
+# /usr/local/bin/docker-compose up -d
+```
 
-Exemplu claims (Action):
+## 2) Deschide Hasura Console
+- http://localhost:8081
+- **Admin secret:** `adminsecret`
+
+## 3) (Opțional) Configurează Auth0 JWT
+Actualizează `HASURA_GRAPHQL_JWT_SECRET` în `docker-compose.yml`:
+```json
+{"type":"RS256","jwk_url":"https://YOUR_DOMAIN/.well-known/jwks.json","issuer":"https://YOUR_DOMAIN/"}
+```
+
+### Auth0 Action (claims)
 ```js
 exports.onExecutePostLogin = async (event, api) => {
-  const namespace = 'https://hasura.io/jwt/claims';
-  api.idToken.setCustomClaim(namespace, {
+  const ns = 'https://hasura.io/jwt/claims';
+  const claims = {
     'x-hasura-default-role': 'user',
     'x-hasura-allowed-roles': ['user'],
     'x-hasura-user-id': event.user.user_id
-  });
-  api.accessToken.setCustomClaim(namespace, {
-    'x-hasura-default-role': 'user',
-    'x-hasura-allowed-roles': ['user'],
-    'x-hasura-user-id': event.user.user_id
-  });
+  };
+  api.idToken.setCustomClaim(ns, claims);
+  api.accessToken.setCustomClaim(ns, claims);
 };
 ```
 
-## 3) Configurează variabilele
-- Copiază `frontend/.env.example` în `frontend/.env` și completează:
-```
-VITE_AUTH0_DOMAIN=...
-VITE_AUTH0_CLIENT_ID=...
-VITE_AUTH0_AUDIENCE=...
-VITE_HASURA_GRAPHQL_URL=http://localhost:8080/v1/graphql
-```
+## 4) Baza de date + Permisiuni
+- Creează tabelele în tab‑ul **Data**.
+- Setează permisiuni pentru rolul `user` folosind `X-Hasura-User-Id`.
 
-Actualizează și JWT secret în `.devcontainer/docker-compose.yml`:
-```json
-{"type":"RS256","jwk_url":"https://YOUR_DOMAIN/.well-known/jwks.json","audience":"YOUR_API_AUDIENCE","issuer":"https://YOUR_DOMAIN/"}
-```
-
-## 4) Pornește frontendul
-În terminal:
+## Comenzi utile
 ```bash
-npm --prefix frontend install
-npm --prefix frontend run dev
+# Oprire
+ docker compose down
+
+# Loguri
+ docker compose logs -f hasura
 ```
-
-Accesează `http://localhost:5173`.
-
-## 5) Hashura Console
-- http://localhost:8080
-- Admin Secret: `devsecret`
-
-Creează 1-2 tabele în Postgres din console și setează permisiuni pe rolul `user`.
 
 ---
-
-Dacă vrei, îți adaug și un exemplu de schema + migrations în repo.
+Dacă vrei un exemplu de schemă + migrations, spune-mi ce entități îți trebuie.
